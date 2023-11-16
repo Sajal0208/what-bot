@@ -1,44 +1,89 @@
-import { Box, FormControl, FormLabel, Input, FormErrorMessage } from '@chakra-ui/react'
+import { Box, FormControl, FormLabel, Input, FormErrorMessage, Button } from '@chakra-ui/react'
 import React, { useState, useEffect } from 'react'
+import { FieldError, RegisterOptions, useForm } from 'react-hook-form';
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import axios from 'axios';
+
+const phoneRegex = new RegExp(
+  /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
+);
+
+const SignupSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8).max(20),
+  name: z.string().min(3).max(20),
+  mobile: z.string().min(10).max(10).regex(phoneRegex, 'Invalid Number!'),
+})
+
+type TSignupSchema = z.infer<typeof SignupSchema>
 
 const SignupForm = () => {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [mobile, setMobile] = useState("")
-  const [name, setName] = useState("")
+  const form = useForm<TSignupSchema>({
+    resolver: zodResolver(SignupSchema)
+  })
+
+  const { handleSubmit, register, getValues, reset, formState } = form;
+  const { errors } = formState
+
+  const isFormValid = () => {
+    return Object.keys(errors).length === 0
+  }
+
+  const handleRegister = async (values: TSignupSchema) => {
+    if(!isFormValid()) return;
+    const data = {
+      email: values.email,
+      password: values.password,
+      name: values.name,
+      mobile: values.mobile
+    }
+
+    try {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_BASE_URL}/auth/register`, data)
+      console.log(response)
+    } catch (e) {
+      console.log(e)
+    }
+  }
+
+  useEffect(() => {
+  }, [errors]);
 
   return (
     <Box className="p-4 flex flex-col items-center justify-center border-2 rounded">
-      <FormControl>
-        <FormLabel>Email</FormLabel>
-        <Input type="email"
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value)
-          }} />
-        <FormErrorMessage></FormErrorMessage>
-        <FormLabel>Password</FormLabel>
-        <Input type="password"
-          value={password}
-          onChange={(e) => {
-            setPassword(e.target.value)
-          }} />
-        <FormErrorMessage></FormErrorMessage>
-        <FormLabel>Name</FormLabel>
-        <Input type="text"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value)
-          }} />
-        <FormErrorMessage></FormErrorMessage>
-        <FormLabel>Whatsapp Mobile Number</FormLabel>
-        <Input type="text"
-          value={mobile}
-          onChange={(e) => {
-            setMobile(e.target.value)
-          }} />
-        <FormErrorMessage></FormErrorMessage>
-      </FormControl>
+      <form onSubmit={handleSubmit(handleRegister)}>
+        <FormControl isInvalid={!!errors} >
+          <InputWrapper label="Email" inputId='email' inputType='email' placeholder='sajal@gmail.com' registerName='email' register={register} error={errors.email} />
+          <InputWrapper label="Password" inputId='password' inputType='password' placeholder='Create Password' registerName='password' register={register} error={errors.password} />
+          <InputWrapper label="Name" inputId='name' inputType='text' placeholder='sajal@gmail.com' registerName='name' register={register} error={errors.name} />
+          <InputWrapper label="Mobile" inputId='mobile' inputType='text' placeholder='XXXXXXXXXX' registerName='mobile' register={register} error={errors.mobile} />
+          <Button type='submit'>Submit</Button>
+        </FormControl>
+      </form>
+
+    </Box>
+  )
+}
+
+type InputWrapperProps = {
+  register: any,
+  registerName: string,
+  placeholder: string,
+  inputId: string,
+  inputType: string,
+  label: string
+  error: FieldError | undefined
+}
+
+const InputWrapper = ({ register, registerName, placeholder, inputId, inputType, label, error }: InputWrapperProps) => {
+  const errorMessage = error?.message
+  console.log('error', error)
+  return (
+    <Box className="">
+      <FormLabel>{label}</FormLabel>
+      <Input id={inputId} type={inputType} placeholder={placeholder} {...register(registerName)} />
+      <FormErrorMessage>{errorMessage}</FormErrorMessage>
     </Box>
   )
 }
