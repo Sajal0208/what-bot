@@ -4,6 +4,7 @@ import { FieldError, RegisterOptions, useForm } from 'react-hook-form';
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios';
+import { useToast } from '@chakra-ui/react';
 
 const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
@@ -19,6 +20,7 @@ const SignupSchema = z.object({
 type TSignupSchema = z.infer<typeof SignupSchema>
 
 const SignupForm = () => {
+  const toast = useToast()
   const form = useForm<TSignupSchema>({
     resolver: zodResolver(SignupSchema)
   })
@@ -42,8 +44,22 @@ const SignupForm = () => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_BASE_URL}/auth/register`, data)
       console.log(response)
+      toast({
+        title: "Account Created.",
+        description: "We've created your account for you.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      })
     } catch (e) {
       console.log(e)
+      toast({
+        title: "Account Creation Failed.",
+        description: "It's not you, it's us.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      })
     }
   }
 
